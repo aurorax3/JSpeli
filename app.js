@@ -4,6 +4,11 @@ let ctx = canvas.getContext('2d');
 canvas.width = 400;
 canvas.height = 400;
 
+// Game state
+let gameActive = true;
+let score = 0;
+let lives = 3;
+
 // Define ball as an object
 const pallo = {
     x: Math.random() * (390 - 10) + 10,
@@ -29,7 +34,7 @@ const maila = {
     width: 100,
     height: 10,
     vari: "blue",
-    nopeus: 5  // Speed for keyboard controls
+    nopeus: 5
 };
 
 // Draw functions
@@ -57,6 +62,37 @@ function piirraMaila() {
     ctx.closePath();
 }
 
+function naytaTilasto() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#000";
+    ctx.fillText("Score: " + score, 10, 20);
+    ctx.fillText("Lives: " + lives, canvas.width - 80, 20);
+}
+
+function naytaGameOver() {
+    ctx.font = "36px Arial";
+    ctx.fillStyle = "#FF0000";
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 40);
+    ctx.font = "24px Arial";
+    ctx.fillText("Final Score: " + score, canvas.width/2, canvas.height/2);
+    ctx.fillText("Click to play again", canvas.width/2, canvas.height/2 + 40);
+    ctx.textAlign = "left";
+}
+
+function resetGame() {
+    gameActive = true;
+    score = 0;
+    lives = 3;
+    
+    pallo.x = Math.random() * (390 - 10) + 10;
+    pallo.y = Math.random() * (390 - 10) + 10;
+    pallo.dx = (Math.random() < 0.5 ? -1 : 1) * 2;
+    pallo.dy = (Math.random() < 0.5 ? -1 : 1) * 2;
+    
+    maila.x = canvas.width / 2 - 50;
+}
+
 // Collision detection
 function tarkistaTormaykset() {
     // Wall collision
@@ -82,9 +118,7 @@ function tarkistaTormaykset() {
         pallo.x > maila.x && 
         pallo.x < maila.x + maila.width) {
         pallo.dy = -pallo.dy;
-        // Increase speed by 10% each hit
-        pallo.dx *= 1.1;
-        pallo.dy *= 1.1;
+        score += 5; // Points for hitting the paddle
     }
 }
 
@@ -92,10 +126,26 @@ function tarkistaTormaykset() {
 function paivitaPallonSijainti() {
     pallo.x += pallo.dx;
     pallo.y += pallo.dy;
+    
+    // Check if ball went below paddle
+    if (pallo.y + pallo.sade > canvas.height) {
+        lives--;
+        if (lives <= 0) {
+            gameActive = false;
+        } else {
+            // Reset ball position
+            pallo.x = Math.random() * (390 - 10) + 10;
+            pallo.y = Math.random() * (390 - 10) + 10;
+            pallo.dx = (Math.random() < 0.5 ? -1 : 1) * 2;
+            pallo.dy = (Math.random() < 0.5 ? -1 : 1) * 2;
+        }
+    }
 }
 
 // Mouse movement handler
 function hiiriliikkuu(e) {
+    if (!gameActive) return;
+    
     const relativeX = e.clientX - canvas.offsetLeft;
     
     if (relativeX > 0 && relativeX < canvas.width) {
@@ -121,6 +171,14 @@ document.addEventListener('keydown', function(event) {
 });
 */
 
+
+// Click handler for restart
+canvas.addEventListener('click', function() {
+    if (!gameActive) {
+        resetGame();
+    }
+});
+
 // Add mouse event listener
 document.addEventListener("mousemove", hiiriliikkuu);
 
@@ -129,15 +187,15 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     piirraKeskuspallo();
-    piirraPallo();
     piirraMaila();
-    tarkistaTormaykset();
-    paivitaPallonSijainti();
+    naytaTilasto();
     
-    // Game over if ball goes below paddle
-    if (pallo.y + pallo.sade > canvas.height) {
-        alert("Game Over!");
-        document.location.reload();
+    if (gameActive) {
+        piirraPallo();
+        tarkistaTormaykset();
+        paivitaPallonSijainti();
+    } else {
+        naytaGameOver();
     }
 }
 
